@@ -14,6 +14,8 @@ You can choose between pre-defined servers as well as enable dynamic Docker cont
 
 ## Example Setup
 
+WARNING: don't setup your LSP server manually, as you'll end up with multiple active clients.
+
 ```lua
 require('nvim-databasehelper').setup(
     {
