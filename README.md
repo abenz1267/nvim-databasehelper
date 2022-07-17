@@ -4,6 +4,7 @@ A plugin that lets you switch database connections and handle various things, as
 
 -   [vim-dadbod](https://github.com/tpope/vim-dadbod) global connection string
 -   restarts LSP with proper connection
+-   execute statements for different databases/connections
 
 You can choose between pre-defined servers as well as enable dynamic Docker container discovering.
 
@@ -60,10 +61,12 @@ require('nvim-databasehelper').setup(
 
 ## Commands
 
-| Command                  | Function                                          |
-| ------------------------ | ------------------------------------------------- |
-| SwitchDatabaseConnection | switch connection. Autocomplete or select window. |
-| SwitchDatabase           | switch database. Autocomplete or select window.   |
+| Command                     | Function                                                            |
+| --------------------------- | ------------------------------------------------------------------- |
+| SwitchDatabaseConnection    | switch connection. Autocomplete or select window.                   |
+| SwitchDatabase              | switch database. Autocomplete or select window.                     |
+| ExecuteOnDatabase           | Execute buffer or visual selection on specific database.            |
+| ExecuteOnDatabaseConnection | Execute buffer or visual selection on specific database connection. |
 
 Simple run ":SwitchDatabaseConnection <database connection or enter for selection>", select the desired database.
 If the database is a Docker container, you'll be prompted for various parameters.

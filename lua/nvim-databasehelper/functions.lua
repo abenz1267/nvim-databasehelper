@@ -17,7 +17,7 @@ local get_config_databases = function(databases)
     return choices
 end
 
-local handle_database_connection_selection = function(selection, config, containers)
+local get_config = function(config, containers, selection)
     local db_config = nil
 
     if config.docker.enabled then
@@ -31,6 +31,12 @@ local handle_database_connection_selection = function(selection, config, contain
             end
         end
     end
+
+    return db_config
+end
+
+local handle_database_connection_selection = function(selection, config, containers)
+    local db_config = get_config(config, containers, selection)
 
     if config.dadbod.enabled == true then
         dadbod.set_global(config.dadbod, db_config)
@@ -100,7 +106,7 @@ function M.select_database_connection(args, config)
     if args[1].args == '' then
         vim.ui.select(
             choices,
-            { prompt = 'Select database:' },
+            { prompt = 'Select database connection:' },
             function(selection)
                 handle_database_connection_selection(selection, config, containers)
             end
@@ -108,6 +114,45 @@ function M.select_database_connection(args, config)
     else
         handle_database_connection_selection(args[1].args, config, containers)
     end
+end
+
+M.execute_on_database_connection = function(args, config)
+    local choices, containers = M.get_database_connection_choices(config)
+    local arg = args[1].args
+
+    if arg == '' then
+        vim.ui.select(
+            choices,
+            { prompt = 'Select database connection:' },
+            function(selection)
+                dadbod.execute(get_config(config, containers, selection), args)
+            end
+        )
+    else
+        dadbod.execute(get_config(config, containers, arg), args)
+    end
+end
+
+M.execute_on_database = function(args, config)
+    local arg = args[1].args
+
+    local old = M.current.database
+
+    if arg == '' then
+        vim.ui.select(
+            M.get_databases(config),
+            { prompt = 'Select database connection:' },
+            function(selection)
+                M.current.database = selection
+                dadbod.execute(M.current, args)
+            end
+        )
+    else
+        M.current.database = arg
+        dadbod.execute(M.current, args)
+    end
+
+    M.current.database = old
 end
 
 return M

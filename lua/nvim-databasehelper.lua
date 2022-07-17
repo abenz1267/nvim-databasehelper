@@ -53,6 +53,24 @@ local setup_commands = function(config)
             return functions.get_databases(config)
         end }
     )
+
+    vim.api.nvim_create_user_command('ExecuteOnDatabaseConnection',
+        function(...)
+            functions.execute_on_database_connection({ ... }, config)
+        end,
+        { nargs = '?', range = true, complete = function()
+            return functions.get_database_connection_choices(config)
+        end }
+    )
+
+    vim.api.nvim_create_user_command('ExecuteOnDatabase',
+        function(...)
+            functions.execute_on_database({ ... }, config)
+        end,
+        { nargs = '?', range = true, complete = function()
+            return functions.get_databases(config)
+        end }
+    )
 end
 
 M.setup = function(opt)
