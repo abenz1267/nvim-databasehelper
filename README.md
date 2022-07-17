@@ -17,10 +17,19 @@ You can choose between pre-defined servers as well as enable dynamic Docker cont
 WARNING: don't setup your LSP server manually, as you'll end up with multiple active clients.
 
 ```lua
+local initial_connection = {
+    driver = 'postgresql',
+    host = '127.0.0.1',
+    port = '5432',
+    user = 'postgres',
+    password = '',
+    database = 'benchmark',
+}
+
 require('nvim-databasehelper').setup(
     {
         lsp = {
-            sqls = config, -- config you'd pass to lspconfig["sqls"].setup()
+            sqls = config, -- config you'd pass to lspconfig["sqls"].setup(). Omit the connections!
         },
         docker = {
             enabled = true,
@@ -37,21 +46,20 @@ require('nvim-databasehelper').setup(
             enabled = true,
             var = 'dadbodstring', -- global Vim variable to use for dadbod ":DB g:<thisvariable> ..."
         },
+        initial_connection = initial_connection,
         databases = {
-            benchmark = {
-                driver = 'postgresql',
-                host = '127.0.0.1',
-                port = '5432',
-                user = 'postgres',
-                password = '',
-                database = 'benchmark',
-            }
+            benchmark = initial_connection
         }
     }
 )
 ```
 
-## Usage
+## Commands
+
+| Command                  | Function                                          |
+| ------------------------ | ------------------------------------------------- |
+| SwitchDatabaseConnection | switch connection. Autocomplete or select window. |
+| SwitchDatabase           | switch database. Autocomplete or select window.   |
 
 Simple run ":SwitchDatabaseConnection <database connection or enter for selection>", select the desired database.
 If the database is a Docker container, you'll be prompted for various parameters.

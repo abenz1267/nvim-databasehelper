@@ -1,15 +1,25 @@
 local functions = require('nvim-databasehelper.functions')
+local lsps = require('nvim-databasehelper.lsps.functions')
+local dadbod = require('nvim-databasehelper.dadbod')
 
 local M = {}
 
 local default = {
-    lsp       = {},
-    databases = {},
-    dadbod    = {
+    lsp                = {},
+    databases          = {},
+    dadbod             = {
         enabled = false,
         var = 'prod'
     },
-    docker    = {
+    initial_connection = {
+        driver = 'postgresql',
+        host = 'localhost',
+        port = '5432',
+        user = 'postgres',
+        password = '',
+        database = '',
+    },
+    docker             = {
         enabled = false,
         must_contain = {},
         defaults = {
@@ -23,23 +33,42 @@ local default = {
     }
 }
 
-M.setup = function(opt)
-    local config = vim.tbl_deep_extend('force', default, opt or {})
-
+local setup_commands = function(config)
     vim.api.nvim_create_user_command('SwitchDatabaseConnection',
         function(...)
-            functions.select_database({ ... }, config)
+            functions.select_database_connection({ ... }, config)
         end,
         { nargs = '?', complete = function()
-            local choices, _ = functions.get_choices(config)
+            local choices, _ = functions.get_database_connection_choices(config)
 
             return choices
         end }
     )
 
-    for k, v in pairs(config.lsp) do
-        require('lspconfig')[k].setup(v)
+    vim.api.nvim_create_user_command('SwitchDatabase',
+        function(...)
+            functions.set_current_database({ ... }, config)
+        end,
+        { nargs = '?', complete = function()
+            return functions.get_databases(config)
+        end }
+    )
+end
+
+M.setup = function(opt)
+    local config = vim.tbl_deep_extend('force', default, opt or {})
+
+    functions.current = config.initial_connection
+
+    if config.dadbod.enabled == true then
+        dadbod.set_global(config.dadbod, config.initial_connection)
     end
+
+    for k, v in pairs(config.lsp) do
+        lsps[k](v, config.initial_connection)
+    end
+
+    setup_commands(config)
 end
 
 return M
