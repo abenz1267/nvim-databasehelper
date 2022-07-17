@@ -26,9 +26,15 @@ local default = {
 M.setup = function(opt)
     local config = vim.tbl_deep_extend('force', default, opt or {})
 
-    vim.api.nvim_create_user_command('SwitchDatabase',
-        function() functions.select_database(config) end,
-        { nargs = '*' }
+    vim.api.nvim_create_user_command('SwitchDatabaseConnection',
+        function(...)
+            functions.select_database({ ... }, config)
+        end,
+        { nargs = '?', complete = function()
+            local choices, _ = functions.get_choices(config)
+
+            return choices
+        end }
     )
 
     for k, v in pairs(config.lsp) do

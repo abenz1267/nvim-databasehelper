@@ -53,7 +53,7 @@ require('nvim-databasehelper').setup(
 
 ## Usage
 
-Simple run ":SwitchDatabase", select the desired database.
+Simple run ":SwitchDatabaseConnection <database connection or enter for selection>", select the desired database.
 If the database is a Docker container, you'll be prompted for various parameters.
 
 ## Current limitations
