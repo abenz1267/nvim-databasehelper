@@ -7,6 +7,10 @@ A plugin that lets you switch database connections and handle various things, as
 
 You can choose between pre-defined servers as well as enable dynamic Docker container discovering.
 
+## Currently supported language servers
+
+-   Postgres: sqls, sqlls is broken (see [here](https://github.com/joe-re/sql-language-server/issues/128))
+
 ## Requires
 
 -   [nvim-plenary](https://github.com/nvim-lua/plenary.nvim) (for Docker containers)
@@ -63,8 +67,3 @@ require('nvim-databasehelper').setup(
 
 Simple run ":SwitchDatabaseConnection <database connection or enter for selection>", select the desired database.
 If the database is a Docker container, you'll be prompted for various parameters.
-
-## Current limitations
-
--   LSPs:
-    -   only works with [sqls](https://github.com/lighttiger2505/sqls) at the moment
