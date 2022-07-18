@@ -46,7 +46,7 @@ local setup_commands = function(config)
         end }
     )
 
-    if config.dadbod.enabled == true then
+    if config.dadbod.enabled then
         vim.api.nvim_create_user_command('ExecuteOnDatabaseConnection',
             function(...)
                 functions.execute_on_database_connection({ ... }, config)
@@ -72,13 +72,13 @@ M.setup = function(opt)
 
     for _, db in pairs(config.databases) do
         for k, v in pairs(db) do
-            if k == 'initial' and v == true then
+            if k == 'initial' and v then
                 functions.current = db
             end
         end
     end
 
-    if config.dadbod.enabled == true then
+    if config.dadbod.enabled then
         dadbod.set_global(config.dadbod, functions.current)
     end
 

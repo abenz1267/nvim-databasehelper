@@ -38,7 +38,7 @@ end
 local handle_database_connection_selection = function(selection, config, containers)
     local db_config = get_config(config, containers, selection)
 
-    if config.dadbod.enabled == true then
+    if config.dadbod.enabled then
         dadbod.set_global(config.dadbod, db_config)
     end
 
@@ -54,7 +54,7 @@ end
 local handle_database_change = function(database, config)
     M.current.database = database
 
-    if config.dadbod.enabled == true then
+    if config.dadbod.enabled then
         dadbod.set_global(config.dadbod, M.current)
     end
 

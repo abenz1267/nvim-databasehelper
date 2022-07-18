@@ -1,6 +1,6 @@
 local M = {}
 
-local supported_drivers = { "postgresql" }
+local supported_drivers = { 'postgresql' }
 
 local get_container_host = function(containers, input)
     for _, value in pairs(containers) do
@@ -42,7 +42,7 @@ M.get_docker_containers = function(must_contain)
             found = true
         end
 
-        if found == true then
+        if found then
             local host = vim.split(parts[2], '-')[1]
             table.insert(containers, { [name] = host })
         end
@@ -69,7 +69,7 @@ M.handle_selection = function(containers, selection, defaults)
         end)
 
     if not vim.tbl_contains(supported_drivers, config.driver) then
-        print("Unsupported driver.")
+        print('Unsupported driver.')
         return nil;
     end
 

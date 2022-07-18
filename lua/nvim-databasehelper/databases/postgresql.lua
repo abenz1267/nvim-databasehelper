@@ -29,7 +29,7 @@ M.get_databases = function(config, current)
                 end
             end
 
-            if ignore == false then
+            if not ignore then
                 table.insert(databases, database)
             end
         end
