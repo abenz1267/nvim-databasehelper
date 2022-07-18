@@ -5,21 +5,13 @@ local dadbod = require('nvim-databasehelper.dadbod')
 local M = {}
 
 local default = {
-    lsp                = {},
-    databases          = {},
-    dadbod             = {
+    lsp       = {},
+    databases = {},
+    dadbod    = {
         enabled = false,
         var = 'prod'
     },
-    initial_connection = {
-        driver = 'postgresql',
-        host = 'localhost',
-        port = '5432',
-        user = 'postgres',
-        password = '',
-        database = '',
-    },
-    docker             = {
+    docker    = {
         enabled = false,
         must_contain = {},
         defaults = {
@@ -78,14 +70,20 @@ end
 M.setup = function(opt)
     local config = vim.tbl_deep_extend('force', default, opt or {})
 
-    functions.current = config.initial_connection
+    for _, db in pairs(config.databases) do
+        for k, v in pairs(db) do
+            if k == 'initial' and v == true then
+                functions.current = db
+            end
+        end
+    end
 
     if config.dadbod.enabled == true then
-        dadbod.set_global(config.dadbod, config.initial_connection)
+        dadbod.set_global(config.dadbod, functions.current)
     end
 
     for k, v in pairs(config.lsp) do
-        lsps[k](v, config.initial_connection)
+        lsps[k](v, functions.current)
     end
 
     setup_commands(config)

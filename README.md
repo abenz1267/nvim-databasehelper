@@ -27,15 +27,6 @@ You can choose between pre-defined servers as well as enable dynamic Docker cont
 WARNING: don't setup your LSP server manually, as you'll end up with multiple active clients.
 
 ```lua
-local initial_connection = {
-    driver = 'postgresql',
-    host = '127.0.0.1',
-    port = '5432',
-    user = 'postgres',
-    password = '',
-    database = 'benchmark',
-}
-
 require('nvim-databasehelper').setup(
     {
         lsp = {
@@ -58,7 +49,15 @@ require('nvim-databasehelper').setup(
         },
         initial_connection = initial_connection,
         databases = {
-            benchmark = initial_connection
+            benchmark = {
+                initial = true,
+                driver = 'postgresql',
+                host = '127.0.0.1',
+                port = '5432',
+                user = 'postgres',
+                password = '',
+                database = 'benchmark',
+            }
         }
     }
 )
