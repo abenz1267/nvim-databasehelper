@@ -161,13 +161,10 @@ end
 
 M.open_database_window = function(config)
     local api = vim.api
-    api.nvim_command('botright split databasehelper')
+    api.nvim_command('belowright split dbh.in')
     api.nvim_win_set_height(0, config.initial_window_height)
-
-    -- win_handle = api.nvim_tabpage_get_win(0)
-    -- buf_handle = api.nvim_win_get_buf(0)
-
     api.nvim_command('set ft=' .. filetypes[M.current.driver])
+    api.nvim_command('setlocal bt=nofile')
 end
 
 return M
