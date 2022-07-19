@@ -5,13 +5,13 @@ local dadbod = require('nvim-databasehelper.dadbod')
 local M = {}
 
 local default = {
-    lsp       = {},
-    databases = {},
-    dadbod    = {
+    lsp                   = {},
+    databases             = {},
+    dadbod                = {
         enabled = false,
         var = 'prod'
     },
-    docker    = {
+    docker                = {
         enabled = false,
         must_contain = {},
         defaults = {
@@ -22,7 +22,8 @@ local default = {
                 database = '',
             }
         }
-    }
+    },
+    initial_window_height = 10,
 }
 
 local setup_commands = function(config)
@@ -35,6 +36,13 @@ local setup_commands = function(config)
 
             return choices
         end }
+    )
+
+    vim.api.nvim_create_user_command('OpenDatabaseWindow',
+        function()
+            functions.open_database_window(config);
+        end,
+        { nargs = 0 }
     )
 
     vim.api.nvim_create_user_command('SwitchDatabase',

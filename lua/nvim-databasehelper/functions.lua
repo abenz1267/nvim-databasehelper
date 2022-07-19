@@ -1,6 +1,10 @@
 local M = {}
 M.current = nil
 
+local filetypes = {
+    postgresql = 'sql'
+}
+
 local docker = require('nvim-databasehelper.docker')
 local lsp = require('nvim-databasehelper.lsp')
 local lsps = require('nvim-databasehelper.lsps.functions')
@@ -153,6 +157,17 @@ M.execute_on_database = function(args, config)
     end
 
     M.current.database = old
+end
+
+M.open_database_window = function(config)
+    local api = vim.api
+    api.nvim_command('botright split databasehelper')
+    api.nvim_win_set_height(0, config.initial_window_height)
+
+    -- win_handle = api.nvim_tabpage_get_win(0)
+    -- buf_handle = api.nvim_win_get_buf(0)
+
+    api.nvim_command('set ft=' .. filetypes[M.current.driver])
 end
 
 return M

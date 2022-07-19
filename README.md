@@ -47,7 +47,6 @@ require('nvim-databasehelper').setup(
             enabled = true,
             var = 'dadbodstring', -- global Vim variable to use for dadbod ":DB g:<thisvariable> ..."
         },
-        initial_connection = initial_connection,
         databases = {
             benchmark = {
                 initial = true,
@@ -58,16 +57,18 @@ require('nvim-databasehelper').setup(
                 password = '',
                 database = 'benchmark',
             }
-        }
+        },
+        initial_window_height = 10,
     }
 )
 ```
 
 ## Commands
 
-| Command                     | Function                                                            |
-| --------------------------- | ------------------------------------------------------------------- |
-| SwitchDatabaseConnection    | switch connection. Autocomplete or select window.                   |
-| SwitchDatabase              | switch database. Autocomplete or select window.                     |
-| ExecuteOnDatabase           | Execute buffer or visual selection on specific database.            |
-| ExecuteOnDatabaseConnection | Execute buffer or visual selection on specific database connection. |
+| Command                     | Function                                                                                                       |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| SwitchDatabaseConnection    | switch connection. Autocomplete or select window.                                                              |
+| SwitchDatabase              | switch database. Autocomplete or select window.                                                                |
+| ExecuteOnDatabase           | execute buffer or visual selection on specific database.                                                       |
+| ExecuteOnDatabaseConnection | execute buffer or visual selection on specific database connection.                                            |
+| OpenDatabaseWindow          | opens a new buffer in the current window where you can write your query. Useful if you want LSP functionality. |
