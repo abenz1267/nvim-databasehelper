@@ -1,4 +1,4 @@
-local lsps = require("nvim-databasehelper.lsps.functions")
+local lsps = require('nvim-databasehelper.lsps.functions')
 
 local M = {}
 
@@ -20,9 +20,11 @@ M.stop_clients = function(lsp)
     end
 end
 
-M.start_clients = function(lsp, config)
-    for k, v in pairs(lsp) do
-        lsps[k](v, config)
+M.restart_clients = function(config, connection, database)
+    M.stop_clients(config)
+
+    for k, v in pairs(config) do
+        lsps[k](v, connection, database)
     end
 end
 

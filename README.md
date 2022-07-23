@@ -4,13 +4,13 @@
 
 -   define various connections
 -   discover Docker containers on demand
+-   discover databases on connections/containers
 -   change running database connection
     -   restart LSP with proper connection
     -   update [vim-dadbod](https://github.com/tpope/vim-dadbod) global connection string
 -   execute statements (via vim-dadbod)
     -   execute for different database/connection
-
-You can choose between pre-defined servers as well as enable dynamic Docker container discovering.
+-   caches Docker information for repeated usage
 
 ## Currently supported language servers
 
@@ -39,7 +39,7 @@ require('nvim-databasehelper').setup(
                 postgresql = {
                     user = 'postgres',
                     password = 'somePassword',
-                    database = 'testdb',
+                    initial_database = 'testdb',
                 }
             }
         },
@@ -47,15 +47,14 @@ require('nvim-databasehelper').setup(
             enabled = true,
             var = 'dadbodstring', -- global Vim variable to use for dadbod ":DB g:<thisvariable> ..."
         },
-        databases = {
-            benchmark = {
-                initial = true,
+        connections = {
+            system = {
+                initial_database = 'benchmark',
                 driver = 'postgresql',
                 host = '127.0.0.1',
                 port = '5432',
                 user = 'postgres',
                 password = '',
-                database = 'benchmark',
             }
         },
         initial_window_height = 10,
@@ -65,10 +64,9 @@ require('nvim-databasehelper').setup(
 
 ## Commands
 
-| Command                     | Function                                                                                                       |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| SwitchDatabaseConnection    | switch connection. Autocomplete or select window.                                                              |
-| SwitchDatabase              | switch database. Autocomplete or select window.                                                                |
-| ExecuteOnDatabase           | execute buffer or visual selection on specific database.                                                       |
-| ExecuteOnDatabaseConnection | execute buffer or visual selection on specific database connection.                                            |
-| OpenDatabaseWindow          | opens a new buffer in the current window where you can write your query. Useful if you want LSP functionality. |
+| Command             | Function                                                                                                       |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| SwitchDatabase      | switch database. Autocomplete or select window.                                                                |
+| ExecuteOnDatabase   | execute buffer or visual selection on specific database.                                                       |
+| ExecuteOnConnection | execute buffer or visual selection on specific connection.                                                     |
+| OpenDatabaseWindow  | opens a new buffer in the current window where you can write your query. Useful if you want LSP functionality. |

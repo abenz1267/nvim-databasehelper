@@ -1,5 +1,7 @@
 local M = {}
-M.current = nil
+M.database = nil
+M.connection = nil
+M.config = nil
 
 local filetypes = {
     postgresql = 'sql'
@@ -7,69 +9,98 @@ local filetypes = {
 
 local docker = require('nvim-databasehelper.docker')
 local lsp = require('nvim-databasehelper.lsp')
-local lsps = require('nvim-databasehelper.lsps.functions')
 local dadbod = require('nvim-databasehelper.dadbod')
 local databases = require('nvim-databasehelper.databases.functions')
 
-local get_config_databases = function(databases)
-    local choices = {}
+local get_databases = function(connections)
+    local list = {}
 
-    for db, _ in pairs(databases) do
-        table.insert(choices, db)
+    for name, connection in pairs(connections) do
+        local result = databases.get_databases(connection)
+
+        for _, v in pairs(result) do
+            table.insert(list, name .. ': ' .. v)
+        end
     end
 
-    return choices
+    return list
 end
 
-local get_config = function(config, containers, selection)
-    local db_config = nil
+M.get_databases = function()
+    local list = {}
 
-    if config.docker.enabled then
-        db_config = docker.handle_selection(containers, selection, config.docker.defaults)
+    for _, v in pairs(get_databases(M.config.connections)) do
+        table.insert(list, v)
     end
 
-    if db_config == nil then
-        for k, v in pairs(config.databases) do
-            if k == selection then
-                db_config = v
+    for _, v in pairs(get_databases(docker.cache)) do
+        table.insert(list, v)
+    end
+
+    if M.config.docker.enabled then
+        local result = docker.get_containers(false)
+
+        for _, v in pairs(result) do
+            for k, _ in pairs(v) do
+                table.insert(list, 'docker: ' .. k)
             end
         end
     end
 
-    return db_config
+    return list
 end
 
-local handle_database_connection_selection = function(selection, config, containers)
-    local db_config = get_config(config, containers, selection)
+local set_database = function(connection, database)
+    M.database = database
+    M.connection = connection
 
-    if config.dadbod.enabled then
-        dadbod.set_global(config.dadbod, db_config)
+    if M.config.dadbod.enabled then
+        dadbod.set_global(M.connection, M.database)
     end
 
-    lsp.start_clients(config.lsp, db_config)
-
-    M.current = db_config
+    lsp.restart_clients(M.config.lsp, M.connection, M.database)
 end
 
-M.get_databases = function(config)
-    return databases.get_databases(config, M.current)
-end
+local perform_with_database = function(input, action)
+    local parts = vim.split(input, ' ')
+    local connection = table.remove(parts, 1):gsub(':', '')
+    local database_or_container = table.concat(parts, ' ')
 
-local handle_database_change = function(database, config)
-    M.current.database = database
+    if M.config.docker.enabled then
+        if connection == 'docker' then
+            local container = table.concat(parts, ' ')
+            local docker_connection = docker.handle_selection(container)
 
-    if config.dadbod.enabled then
-        dadbod.set_global(config.dadbod, M.current)
+            local list = {}
+
+            local result = databases.get_databases(docker_connection)
+
+            for _, v in pairs(result) do
+                table.insert(list, v)
+            end
+
+            if docker_connection ~= nil then
+                vim.ui.select(
+                    list,
+                    { prompt = 'Select database:' },
+                    function(selection)
+                        action(docker_connection, selection)
+                    end
+                )
+            end
+
+            return
+        end
+
+        if docker.cache[connection] ~= nil then
+            action(docker.cache[connection], database_or_container)
+        end
     end
 
-    lsp.stop_clients(config.lsp)
-
-    for k, v in pairs(config.lsp) do
-        lsps[k](v, M.current)
-    end
+    action(M.config.connections[connection], database_or_container)
 end
 
-M.set_current_database = function(args, config)
+M.set_current_database = function(args)
     local arg = args[1].args
 
     if arg == '' then
@@ -77,94 +108,97 @@ M.set_current_database = function(args, config)
             M.get_databases(),
             { prompt = 'Select database:' },
             function(selection)
-                handle_database_change(selection, config)
+                perform_with_database(selection, set_database)
             end
         )
     else
-        handle_database_change(arg, config)
+        perform_with_database(arg, set_database)
     end
 end
 
-M.get_database_connection_choices = function(config)
-    local choices = get_config_databases(config.databases)
-    local containers = nil
+M.open_database_window = function()
+    local api = vim.api
+    api.nvim_command('belowright split dbh.in')
+    api.nvim_win_set_height(0, M.config.initial_window_height)
+    api.nvim_command('set ft=' .. filetypes[M.connection.driver])
+    api.nvim_command('setlocal bt=nofile')
+end
 
-    if config.docker.enabled then
-        containers = docker.get_docker_containers(config.docker.must_contain)
 
-        for _, value in pairs(containers) do
-            for key, _ in pairs(value) do
-                table.insert(choices, key)
+M.get_connections = function()
+    local list = {}
+
+    for k, _ in pairs(M.config.connections) do
+        table.insert(list, k)
+    end
+
+    if M.config.docker.enabled then
+        for _, v in pairs(docker.get_containers(true)) do
+            for container, _ in pairs(v) do
+                table.insert(list, 'docker: ' .. container)
             end
         end
     end
 
-    return choices, containers
+    return list
 end
 
-function M.select_database_connection(args, config)
-    lsp.stop_clients(config.lsp)
+local get_connection_data = function(connection)
+    local parts = vim.split(connection, ' ')
 
-    local choices, containers = M.get_database_connection_choices(config)
+    if #parts > 1 then
+        table.remove(parts, 1)
+    end
 
-    if args[1].args == '' then
+    connection = table.concat(parts, ' ')
+
+    local res = nil
+
+    if M.config.connections[connection] ~= nil then
+        res = M.config.connections[connection]
+    end
+
+    if M.config.docker.enabled and res == nil then
+        res = docker.handle_selection(connection)
+    end
+
+    return res
+end
+
+M.execute_on_connection = function(args)
+    local connection = args[1].args
+
+    if connection == '' then
         vim.ui.select(
-            choices,
-            { prompt = 'Select database connection:' },
+            M.get_connections(),
+            { prompt = 'Select connection:' },
             function(selection)
-                handle_database_connection_selection(selection, config, containers)
+                dadbod.execute(get_connection_data(selection), '', args)
             end
         )
     else
-        handle_database_connection_selection(args[1].args, config, containers)
+        dadbod.execute(get_connection_data(connection), '', args)
     end
 end
 
-M.execute_on_database_connection = function(args, config)
-    local choices, containers = M.get_database_connection_choices(config)
+M.execute_on_database = function(args)
     local arg = args[1].args
 
     if arg == '' then
         vim.ui.select(
-            choices,
-            { prompt = 'Select database connection:' },
+            M.get_databases(),
+            { prompt = 'Select database:' },
             function(selection)
-                dadbod.execute(get_config(config, containers, selection), args)
+                perform_with_database(selection, function(connection, database)
+                    dadbod.execute(connection, database, args)
+                end)
             end
         )
     else
-        dadbod.execute(get_config(config, containers, arg), args)
+        perform_with_database(arg, function(connection, database)
+            dadbod.execute(connection, database, args)
+        end)
     end
-end
-
-M.execute_on_database = function(args, config)
-    local arg = args[1].args
-
-    local old = M.current.database
-
-    if arg == '' then
-        vim.ui.select(
-            M.get_databases(config),
-            { prompt = 'Select database connection:' },
-            function(selection)
-                M.current.database = selection
-                dadbod.execute(M.current, args)
-            end
-        )
-    else
-        M.current.database = arg
-        dadbod.execute(M.current, args)
-    end
-
-    M.current.database = old
-end
-
-M.open_database_window = function(config)
-    local api = vim.api
-    api.nvim_command('belowright split dbh.in')
-    api.nvim_win_set_height(0, config.initial_window_height)
-    api.nvim_command('set ft=' .. filetypes[M.current.driver])
-    api.nvim_command('setlocal bt=nofile')
 end
 
 return M

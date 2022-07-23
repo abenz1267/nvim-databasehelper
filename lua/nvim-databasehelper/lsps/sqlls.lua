@@ -1,15 +1,15 @@
-local start = function(lsp_config, config)
+local start = function(lsp_config, connection, database)
     local new_config = {
         settings = {
             sqlLanguageServer = {
                 connections = {
                     {
-                        adapter = config.driver,
-                        host = config.host,
-                        port = config.port,
-                        user = config.user,
-                        password = config.password,
-                        database = config.database
+                        adapter = connection.driver,
+                        host = connection.host,
+                        port = connection.port,
+                        user = connection.user,
+                        password = connection.password,
+                        database = database
                     }
                 }
             }

@@ -1,4 +1,6 @@
 local M = {}
+M.config = nil
+M.cache = {}
 
 local supported_drivers = { 'postgresql' }
 
@@ -14,7 +16,7 @@ local get_container_host = function(containers, input)
     return nil
 end
 
-M.get_docker_containers = function(must_contain)
+M.get_containers = function(ignore_cache)
     local Job = require 'plenary.job'
     local job = Job:new {
         command = 'docker',
@@ -32,8 +34,8 @@ M.get_docker_containers = function(must_contain)
 
         local found = false
 
-        if #must_contain ~= 0 then
-            for _, filter in pairs(must_contain) do
+        if #M.config.must_contain ~= 0 then
+            for _, filter in pairs(M.config.must_contain) do
                 if string.find(name, filter) then
                     found = true
                 end
@@ -44,14 +46,22 @@ M.get_docker_containers = function(must_contain)
 
         if found then
             local host = vim.split(parts[2], '-')[1]
-            table.insert(containers, { [name] = host })
+
+            if M.cache[name] == nil or ignore_cache then
+                table.insert(containers, { [name] = host })
+            end
         end
     end
 
     return containers
 end
 
-M.handle_selection = function(containers, selection, defaults)
+M.handle_selection = function(selection)
+    if M.cache[selection] ~= nil then
+        return M.cache[selection]
+    end
+
+    local containers = M.get_containers()
     local config = {}
     local container_host = get_container_host(containers, selection)
 
@@ -63,9 +73,9 @@ M.handle_selection = function(containers, selection, defaults)
     config.host = host_port[1]
     config.port = host_port[2]
 
-    vim.ui.input({ prompt = 'Driver (default = ' .. defaults.driver .. '): ' },
+    vim.ui.input({ prompt = 'Driver (default = ' .. M.config.defaults.driver .. '): ' },
         function(input)
-            config.driver = input or defaults.driver
+            config.driver = input or M.config.defaults.driver
         end)
 
     if not vim.tbl_contains(supported_drivers, config.driver) then
@@ -73,7 +83,7 @@ M.handle_selection = function(containers, selection, defaults)
         return nil;
     end
 
-    local d = vim.tbl_get(defaults, config.driver)
+    local d = vim.tbl_get(M.config.defaults, config.driver)
 
     if d ~= nil then
         config = vim.tbl_deep_extend('force', config, d)
@@ -89,9 +99,9 @@ M.handle_selection = function(containers, selection, defaults)
         password_prompt = 'Password (default: <hidden>): '
     end
 
-    local database_prompt = 'Database: '
-    if config.password ~= '' then
-        database_prompt = 'Database (default = ' .. config.database .. '): '
+    local database_prompt = 'Initial Database: '
+    if config.initial_database ~= '' then
+        database_prompt = 'Initial Database (default = ' .. config.initial_database .. '): '
     end
 
     vim.ui.input({ prompt = user_prompt },
@@ -101,7 +111,9 @@ M.handle_selection = function(containers, selection, defaults)
         function(input) config.password = input or config.password end)
 
     vim.ui.input({ prompt = database_prompt },
-        function(input) config.database = input or config.database end)
+        function(input) config.initial_database = input or config.initial_database end)
+
+    M.cache[selection] = config
 
     return config
 end

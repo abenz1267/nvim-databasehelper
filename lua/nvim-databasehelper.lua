@@ -1,12 +1,13 @@
 local functions = require('nvim-databasehelper.functions')
 local lsps = require('nvim-databasehelper.lsps.functions')
+local docker = require('nvim-databasehelper.docker')
 local dadbod = require('nvim-databasehelper.dadbod')
 
 local M = {}
 
 local default = {
     lsp                   = {},
-    databases             = {},
+    connections           = {},
     dadbod                = {
         enabled = false,
         var = 'prod'
@@ -19,58 +20,36 @@ local default = {
             postgresql = {
                 user = '',
                 password = '',
-                database = '',
+                initial_database = '',
             }
         }
     },
     initial_window_height = 10,
 }
 
-local setup_commands = function(config)
-    vim.api.nvim_create_user_command('SwitchDatabaseConnection',
-        function(...)
-            functions.select_database_connection({ ... }, config)
-        end,
-        { nargs = '?', complete = function()
-            local choices, _ = functions.get_database_connection_choices(config)
-
-            return choices
-        end }
-    )
-
-    vim.api.nvim_create_user_command('OpenDatabaseWindow',
-        function()
-            functions.open_database_window(config);
-        end,
-        { nargs = 0 }
-    )
+local setup_commands = function(dadbod)
+    vim.api.nvim_create_user_command('OpenDatabaseWindow', functions.open_database_window, { nargs = 0 })
 
     vim.api.nvim_create_user_command('SwitchDatabase',
         function(...)
-            functions.set_current_database({ ... }, config)
+            functions.set_current_database({ ... })
         end,
-        { nargs = '?', complete = function()
-            return functions.get_databases(config)
-        end }
+        { nargs = '?', complete = functions.get_databases }
     )
 
-    if config.dadbod.enabled then
-        vim.api.nvim_create_user_command('ExecuteOnDatabaseConnection',
+    if dadbod.enabled then
+        vim.api.nvim_create_user_command('ExecuteOnConnection',
             function(...)
-                functions.execute_on_database_connection({ ... }, config)
+                functions.execute_on_connection({ ... })
             end,
-            { nargs = '?', range = true, complete = function()
-                return functions.get_database_connection_choices(config)
-            end }
+            { nargs = '?', range = true, complete = functions.get_connections }
         )
 
         vim.api.nvim_create_user_command('ExecuteOnDatabase',
             function(...)
-                functions.execute_on_database({ ... }, config)
+                functions.execute_on_database({ ... })
             end,
-            { nargs = '?', range = true, complete = function()
-                return functions.get_databases(config)
-            end }
+            { nargs = '?', range = true, complete = functions.get_databases }
         )
     end
 end
@@ -78,23 +57,24 @@ end
 M.setup = function(opt)
     local config = vim.tbl_deep_extend('force', default, opt or {})
 
-    for _, db in pairs(config.databases) do
-        for k, v in pairs(db) do
-            if k == 'initial' and v then
-                functions.current = db
-            end
-        end
+    functions.config = config
+    functions.connection = config.connections[config.initial_connection]
+    functions.database = config.connections[config.initial_connection].initial_database
+
+    if config.docker.enabled then
+        docker.config = config.docker
     end
 
     if config.dadbod.enabled then
-        dadbod.set_global(config.dadbod, functions.current)
+        dadbod.config = config.dadbod
+        dadbod.set_global(functions.connection, functions.database)
     end
 
     for k, v in pairs(config.lsp) do
-        lsps[k](v, functions.current)
+        lsps[k](v, functions.connection, functions.database)
     end
 
-    setup_commands(config)
+    setup_commands(config.dadbod)
 end
 
 return M

@@ -1,15 +1,14 @@
 local M = {}
 
-local to_ignore = { 'postgres', 'template0', 'template1', 'rows)', '' }
-
-M.get_databases = function(config, current)
-    vim.env.PGPASSWORD = current.password
+M.get_databases = function(connection)
+    vim.env.PGPASSWORD = connection.password
 
     local Job = require 'plenary.job'
 
     local job = Job:new {
         command = 'psql',
-        args = { '-h', current.host, '-p', current.port, '-U', current.user, '-c', '\\l' }
+        args = { '-h', connection.host, '-p', connection.port, '-U', connection.user, '-t', '-c',
+            'SELECT datname FROM pg_database WHERE datname <> ALL (\'{template0,template1,postgres}\')' }
     }
 
     job:sync()
@@ -17,21 +16,11 @@ M.get_databases = function(config, current)
 
     local databases = {}
 
-    for k, value in pairs(result) do
-        if k ~= 1 and k ~= 2 and k ~= 3 then
-            local database = vim.split(value, ' ')[2]
+    for _, value in pairs(result) do
+        value = vim.trim(value)
 
-            local ignore = false
-            for _, i in pairs(to_ignore) do
-                if database == i or database == nil then
-                    ignore = true
-                    break
-                end
-            end
-
-            if not ignore then
-                table.insert(databases, database)
-            end
+        if value ~= '' then
+            table.insert(databases, value)
         end
     end
 
