@@ -27,7 +27,7 @@ local default = {
     initial_window_height = 10,
 }
 
-local setup_commands = function(dadbod)
+local setup_commands = function(dadbodconf, dockerconf)
     vim.api.nvim_create_user_command('OpenDatabaseWindow', functions.open_database_window, { nargs = 0 })
 
     vim.api.nvim_create_user_command('SwitchDatabase',
@@ -37,7 +37,27 @@ local setup_commands = function(dadbod)
         { nargs = '?', complete = functions.get_databases }
     )
 
-    if dadbod.enabled then
+    if dockerconf.enabled then
+        vim.api.nvim_create_user_command('StartContainer',
+            function(...)
+                docker.handle_container({ ... }, 'start')
+            end,
+            { nargs = '?', range = true,
+                complete = function() return docker.list_containers({ 'ps', '--filter', 'status=exited', '--format',
+                        '{{.Names}}' })
+                end }
+        )
+
+        vim.api.nvim_create_user_command('StopContainer',
+            function(...)
+                docker.handle_container({ ... }, 'stop')
+            end,
+            { nargs = '?', range = true,
+                complete = function() return docker.list_containers({ 'ps', '--format', '{{.Names}}' }) end }
+        )
+    end
+
+    if dadbodconf.enabled then
         vim.api.nvim_create_user_command('ExecuteOnConnection',
             function(...)
                 functions.execute_on_connection({ ... })
@@ -74,7 +94,7 @@ M.setup = function(opt)
         lsps[k](v, functions.connection, functions.database)
     end
 
-    setup_commands(config.dadbod)
+    setup_commands(config.dadbod, config.docker)
 end
 
 return M

@@ -16,16 +16,7 @@ local get_container_host = function(containers, input)
     return nil
 end
 
-M.get_containers = function(ignore_cache)
-    local Job = require 'plenary.job'
-    local job = Job:new {
-        command = 'docker',
-        args = { 'ps', '--format', '{{.Names}};{{.Ports}}' }
-    }
-
-    job:sync()
-    local result = job:result()
-
+local create_container_list = function(result, ignore_cache)
     local containers = {}
 
     for _, value in pairs(result) do
@@ -54,6 +45,76 @@ M.get_containers = function(ignore_cache)
     end
 
     return containers
+end
+
+M.list_containers = function(args)
+    local Job = require 'plenary.job'
+    local job = Job:new {
+        command = 'docker',
+        args = args
+    }
+
+    job:sync()
+    local result = job:result()
+
+    local containers = {}
+
+    for _, v in pairs(result) do
+        table.insert(containers, v)
+    end
+
+    return containers
+end
+
+M.handle_container = function(args, action)
+    local arg = args[1].args
+
+    local listFunc = function() return M.list_containers({ 'ps', '--format', '{{.Names}}' })
+    end
+
+    if action == 'start' then
+        listFunc = function() return M.list_containers({ 'ps', '--filter', 'status=exited', '--format',
+                '{{.Names}}' })
+        end
+    end
+
+    if arg == '' then
+        vim.ui.select(
+            listFunc(),
+            { prompt = 'Select container:' },
+            function(selection)
+                local Job = require 'plenary.job'
+                local job = Job:new {
+                    command = 'docker',
+                    args = { action, selection }
+                }
+
+                job:sync()
+            end
+        )
+    else
+        local Job = require 'plenary.job'
+        local job = Job:new {
+            command = 'docker',
+            args = { action, arg }
+        }
+
+        job:sync()
+    end
+end
+
+
+M.get_containers = function(ignore_cache)
+    local Job = require 'plenary.job'
+    local job = Job:new {
+        command = 'docker',
+        args = { 'ps', '--format', '{{.Names}};{{.Ports}}' }
+    }
+
+    job:sync()
+    local result = job:result()
+
+    return create_container_list(result, ignore_cache)
 end
 
 M.handle_selection = function(selection)

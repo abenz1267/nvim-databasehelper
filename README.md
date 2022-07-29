@@ -11,6 +11,7 @@
 -   execute statements (via vim-dadbod)
     -   execute for different database/connection
 -   caches Docker information for repeated usage
+-   start/stop docker containers
 
 ## Currently supported language servers
 
@@ -70,3 +71,5 @@ require('nvim-databasehelper').setup(
 | ExecuteOnDatabase   | execute buffer or visual selection on specific database.                                                       |
 | ExecuteOnConnection | execute buffer or visual selection on specific connection.                                                     |
 | OpenDatabaseWindow  | opens a new buffer in the current window where you can write your query. Useful if you want LSP functionality. |
+| StartContainer      | Starts the selected docker container                                                                           |
+| StopContainer       | Stops the selected docker container                                                                            |
