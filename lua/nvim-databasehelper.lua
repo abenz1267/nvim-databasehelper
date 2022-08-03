@@ -12,6 +12,7 @@ local default = {
         enabled = false,
         var = 'prod'
     },
+    initial_connection    = '',
     docker                = {
         enabled = false,
         must_contain = {},
@@ -78,8 +79,11 @@ M.setup = function(opt)
     local config = vim.tbl_deep_extend('force', default, opt or {})
 
     functions.config = config
-    functions.connection = config.connections[config.initial_connection]
-    functions.database = config.connections[config.initial_connection].initial_database
+
+    if config.initial_connection ~= '' then
+        functions.connection = config.connections[config.initial_connection]
+        functions.database = config.connections[config.initial_connection].initial_database
+    end
 
     if config.docker.enabled then
         docker.config = config.docker
@@ -87,11 +91,16 @@ M.setup = function(opt)
 
     if config.dadbod.enabled then
         dadbod.config = config.dadbod
-        dadbod.set_global(functions.connection, functions.database)
+
+        if functions.database ~= nil and functions.connection ~= nil then
+            dadbod.set_global(functions.connection, functions.database)
+        end
     end
 
     for k, v in pairs(config.lsp) do
-        lsps[k](v, functions.connection, functions.database)
+        if functions.database ~= nil and functions.connection ~= nil then
+            lsps[k](v, functions.connection, functions.database)
+        end
     end
 
     setup_commands(config.dadbod, config.docker)
